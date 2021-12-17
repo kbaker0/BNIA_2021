@@ -20,6 +20,7 @@ voucher_shortname = 'hcvhouse'
 constr_shortname = 'constper'
 salepr_shortname = 'salepr'
 demper_shortname = 'demper'
+lifexp_shortname = 'lifexp'
 
 # Plotly Chart Studio creds
 api_key = 'lM8S3E40y3ZLZxHnRBAL'
@@ -36,6 +37,7 @@ voucher_url = baseurl+voucher_shortname+slug
 constr_url = baseurl+constr_shortname+slug
 salepr_url = baseurl+salepr_shortname+slug
 demper_url = baseurl+demper_shortname+slug
+lifexp_url = baseurl+lifexp_shortname+slug
 
 # Data Frames
 df = geopandas.read_file(vacant_url).set_index('CSA2010').drop(axis=1,columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
@@ -45,6 +47,8 @@ df_rehab = geopandas.read_file(rehab_url).set_index('CSA2010').drop(columns=['OB
 df_constr = geopandas.read_file(constr_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
 df_salepr = geopandas.read_file(salepr_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
 df_demper = geopandas.read_file(demper_url).set_index(df.index).drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
+df_lifexp = geopandas.read_file(lifexp_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
+
 
 available_keys = df.keys()
 nomail_keys = df_nomail.keys()
@@ -53,6 +57,9 @@ constr_keys = df_constr.keys()
 salepr_keys = df_salepr.keys()
 demper_keys = df_demper.keys()
 change_keys = df_change.keys()
+lifexp_keys = df_lifexp.keys()
+
+print(change_keys)
 
 def melt_function(df, available_keys):
     mdf = pd.melt(df, value_vars=[i for i in available_keys], var_name='indicator_year', ignore_index=False)
@@ -64,6 +71,7 @@ df_change_resrehab = df_change[['chresrehab']]
 df_change_constr = df_change[['chconstper']]
 df_change_salepr = df_change[['chsalepr']]
 df_change_demper = df_change[['chdemper']]
+df_change_lifexp = df_change[['chlifexp']]
 
 thisone = change_df.sort_values('chvacant', ascending=False)
 
@@ -85,12 +93,16 @@ df_change_salepr['group'] = chsalepr_group.values
 chdemper_group = pd.cut(df_change_demper['chdemper'], bins=[-100, -1, 1, 100], labels=['decrease', 'little_change', 'increase'])
 df_change_demper['group'] = chdemper_group.values
 
+chlifexp_group = pd.cut(df_change_lifexp['chlifexp'], bins=[-100, -1, 1, 100], labels=['decrease', 'little_change', 'increase'])
+df_change_lifexp['group'] = chlifexp_group.values
+
 my_df = melt_function(df, df.keys())
 df_nomail = melt_function(df_nomail, df_nomail.keys())
 df_resrehab = melt_function(df_rehab, df_rehab.keys())
 df_const= melt_function(df_constr, df_constr.keys())
 df_salepri = melt_function(df_salepr, df_salepr.keys())
 df_demo = melt_function(df_demper, df_demper.keys())
+df_lifexp = melt_function(df_lifexp, df_lifexp.keys())
 
 def trend_column(df, mdf):
     mdf['trend'] = mdf.rename(index=df.set_index(df.index)['group']).index
@@ -98,6 +110,7 @@ def trend_column(df, mdf):
     
 trend_column(change_df, my_df)
 trend_column(df_change_nomail, df_nomail)
+trend_column(df_change_lifexp, df_lifexp)
 # trend_column(df_change_resrehab, df_resrehab)
 # trend_column(df_change_demper, df_demo)
 # trend_column(df_change_salepr, df_salepri)
@@ -109,7 +122,7 @@ def sorted_change_column(df, mdf, column):
     return sortem
 nomail_sorted_column = sorted_change_column(df_change_nomail, df_nomail, 'chnomail')
 vacant_sorted_column = sorted_change_column(change_df, my_df, 'chvacant')
-
+lifexp_sorted_column = sorted_change_column(df_change_lifexp, df_lifexp, 'chlifexp')
 # print(vacant_sorted_column)
 
 
@@ -123,6 +136,7 @@ def map_group(mdf):
 
 vacant_map = map_group(my_df)
 nomail_map = map_group(df_nomail)
+lifexp_map = map_group(df_lifexp)
 # print(vacant_map)
 # resrehab_map = map_group(df_resrehab)
 # const_map = map_group(df_const)
@@ -197,3 +211,4 @@ def line_plot(mdf, title, map, order):
 
 line_plot(my_df, "Percent of Residential Properties that are Vacant and Abandoned, by CSA", vacant_map, vacant_sorted_column)
 # line_plot(df_nomail, "Percent of Residential Properties that Do Not Receive Mail, by CSA", nomail_map, nomail_sorted_column)
+line_plot(df_lifexp, "Life expectancy", lifexp_map, lifexp_sorted_column)
