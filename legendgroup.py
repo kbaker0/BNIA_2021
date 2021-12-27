@@ -26,7 +26,7 @@ demper_shortname = 'demper'
 lifexp_shortname = 'lifexp'
 
 # Plotly Chart Studio creds
-api_key = 'lM8S3E40y3ZLZxHnRBAL'
+api_key = 'aJlXTdMhr3IvOQqIyTI0'
 username = 'kbaker0'
 chart_studio.tools.set_credentials_file(username=username, api_key=api_key)
 
@@ -46,8 +46,8 @@ libcard_url = 'https://services1.arcgis.com/mVFRs7NF4iFitgbY/arcgis/rest/service
 lead_url = 'https://services1.arcgis.com/mVFRs7NF4iFitgbY/arcgis/rest/services/Ebll' + slug
 infmort_url = 'https://services1.arcgis.com/mVFRs7NF4iFitgbY/arcgis/rest/services/Mort1_' + slug
 teenbir_url = 'https://services1.arcgis.com/mVFRs7NF4iFitgbY/arcgis/rest/services/Teenbir' + slug
-pcrime_url = 'https://services1.arcgis.com/mVFRs7NF4iFitgbY/arcgis/rest/services/Prop' + slug
-vcrime_url = 'https://services1.arcgis.com/mVFRs7NF4iFitgbY/arcgis/rest/services/Viol' + slug
+prop_url = 'https://services1.arcgis.com/mVFRs7NF4iFitgbY/arcgis/rest/services/Prop' + slug
+viol_url = 'https://services1.arcgis.com/mVFRs7NF4iFitgbY/arcgis/rest/services/Viol' + slug
 dirt_url = 'https://services1.arcgis.com/mVFRs7NF4iFitgbY/arcgis/rest/services/Dirtyst' + slug
 
 # Data Frames
@@ -64,14 +64,10 @@ df_libcard = geopandas.read_file(libcard_url).set_index('CSA2010').drop(columns=
 df_lead = geopandas.read_file(lead_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
 df_infmort = geopandas.read_file(infmort_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
 df_teenbir = geopandas.read_file(teenbir_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
-df_pcrime = geopandas.read_file(pcrime_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
-df_vcrime = geopandas.read_file(vcrime_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
+df_prop = geopandas.read_file(prop_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
+df_viol = geopandas.read_file(viol_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
 df_dirt = geopandas.read_file(dirt_url).set_index('CSA2010').drop(columns=['OBJECTID', 'Shape__Area', 'Shape__Length', 'geometry'])
 
-
-# fig = px.scatter(df.melt(id_vars="beep"), x='beep', y='value', color='variable')
-# fig.show()
-# #
 available_keys = df.keys()
 nomail_keys = df_nomail.keys()
 rehab_keys = df_rehab.keys()
@@ -81,10 +77,11 @@ demper_keys = df_demper.keys()
 change_keys = df_change.keys()
 lifexp_keys = df_lifexp.keys()
 
+# Rearranging the columns into long format to apply to line graph params
 def melt_function(df, availablekeys):
     mdf = pd.melt(df, value_vars=[i for i in availablekeys], var_name='indicator_year', ignore_index=False)
     return mdf
-# print(df_change.keys())
+
 change_df = df_change[['chvacant']]
 df_change_nomail = df_change[['chnomail']]
 df_change_resrehab = df_change[['chresrehab']]
@@ -92,7 +89,9 @@ df_change_constr = df_change[['chconstper']]
 df_change_salepr = df_change[['chsalepr']]
 df_change_demper = df_change[['chdemper']]
 df_change_libcard = df_change[['chlibcard']]
-# df_change_lifexp = df_change[['chlifexp']]
+df_change_teenbir = df_change[['chteenbir']]
+df_change_prop = df_change[['chprop']]
+df_change_viol = df_change[['chviol']]
 
 # Creating columns in the change dataframes that are assigned the indicator change values respectively
 ch_group = pd.cut(change_df['chvacant'], bins=[-40, -1, 1, 40], labels=['Decrease', 'Little Change', 'Increase'])
@@ -116,6 +115,21 @@ df_change_demper['group'] = chdemper_group.values
 chlibcard_group = pd.cut(df_change_libcard['chlibcard'], bins=[-100, 1, 20, 100], labels=['Decrease', 'Little Change', 'Increase'])
 df_change_libcard['group'] = chlibcard_group.values
 
+chteenbir_group = pd.cut(df_change_teenbir['chteenbir'], bins=[-100, -2, 2, 100], labels=['Decrease', 'Little Change', 'Increase'])
+df_change_teenbir['group'] = chteenbir_group.values
+
+chprop_group = pd.cut(df_change_prop['chprop'], bins=[-200, -2, 1, 100], labels=['Decrease', 'Little Change', 'Increase'])
+df_change_prop['group'] = chprop_group.values
+
+chviol_group = pd.cut(df_change_viol['chviol'], bins=[-200, -1, 1, 100], labels=['Decrease', 'Little Change', 'Increase'])
+df_change_viol['group'] = chviol_group.values
+
+# chteenbir_group = pd.cut(df_change_teenbir['chprop'], bins=[-100, 1, 20, 100], labels=['Decrease', 'Little Change', 'Increase'])
+# df_change_teenbir['group'] = chteenbir_group.values
+
+# chteenbir_group = pd.cut(df_change_teenbir['chprop'], bins=[-100, 1, 20, 100], labels=['Decrease', 'Little Change', 'Increase'])
+# df_change_teenbir['group'] = chteenbir_group.values
+print(df_change_prop.sort_values('chprop'))
 
 my_df = melt_function(df, df.keys())
 df_nomail = melt_function(df_nomail, df_nomail.keys())
@@ -125,19 +139,10 @@ df_salepri = melt_function(df_salepr, df_salepr.keys())
 df_demo = melt_function(df_demper, df_demper.keys())
 df_lifexp = melt_function(df_lifexp, df_lifexp.keys())
 df_libcard = melt_function(df_libcard, df_libcard.keys())
-
-# def trend_column(df, mdf):
-#     mdf['trend'] = mdf.rename(index=df.set_index(df.index)['group']).index
-#     return mdf
-    
-# trend_column(change_df, my_df)
-# trend_column(df_change_nomail, df_nomail)
-# # trend_column(df_change_lifexp, df_lifexp)
-# trend_column(df_change_resrehab, df_resrehab)
-# trend_column(df_change_demper, df_demo)
-# trend_column(df_change_salepr, df_salepri)
-# trend_column(df_change_constr, df_const)
-
+df_teenbir = melt_function(df_teenbir, df_teenbir.keys())
+df_prop = melt_function(df_prop, df_prop.keys())
+df_viol = melt_function(df_viol, df_viol.keys())
+# Adding the trend type related to the number in the change database
 def sorted_change_column(df, mdf, column):
     mdf['trend'] = mdf.rename(index=df.set_index(df.index)['group']).index
     mdf['change'] = mdf.rename(index=df.set_index(df.index)[column]).index
@@ -151,14 +156,21 @@ sorted_change_column(df_change_demper, df_demo,'chdemper')
 sorted_change_column(df_change_salepr, df_salepri,'chsalepr')
 sorted_change_column(df_change_constr, df_const, 'chconstper')
 sorted_change_column(df_change_libcard, df_libcard, 'chlibcard')
+sorted_change_column(df_change_teenbir, df_teenbir, 'chteenbir')
+sorted_change_column(df_change_prop, df_prop, 'chprop')
+sorted_change_column(df_change_viol, df_viol, 'chviol')
 
+# Rearranging the values from negative to positive to show in the legend correctly
 my_df = my_df.sort_values('change', ascending=True)
 df_nomail = df_nomail.sort_values('change', ascending=True)
 df_resrehab = df_resrehab.sort_values('change', ascending=True)
 df_demo = df_demo.sort_values('change', ascending=True)
 df_const = df_const.sort_values('change', ascending=True)
 df_salepri = df_salepri.sort_values('change', ascending=True)
-df_libcard = df_libcard.sort_values('change', ascending=False)
+df_libcard = df_libcard.sort_values('change', ascending=True)
+df_teenbir = df_teenbir.sort_values('change', ascending=True)
+df_prop = df_prop.sort_values('change', ascending=True)
+df_viol = df_viol.sort_values('change', ascending=True)
 
 # Mapping out better labeling for each year associated with each indicator name
 my_df['indicator_year'] = my_df['indicator_year'].map(
@@ -191,18 +203,29 @@ df_libcard['indicator_year'] = df_libcard['indicator_year'].map(
     'libcard16':'2016', 'libcard17':'2017', 'libcard18':'2018', 
     'libcard19':'2019'})
 
-# def line_plot(mdf, title, map, order):
-#     fig = px.line(mdf, title=title, x=mdf['indicator_year'], y = mdf['value'], labels={ 'indicator_year': 'Year'}, 
-#     color = mdf.index, facet_col='trend', category_orders={'CSA2010': [i for i in order.index.unique()], 'trend': ['decrease', 'no_change', 'Increase']}, 
-#     template='plotly_white') 
+df_teenbir['indicator_year'] = df_teenbir['indicator_year'].map(
+    {'teenbir09':'2009', 'teenbir10':'2010', 
+    'teenbir11':'2011', 'teenbir12':'2012', 
+    'teenbir13':'2013', 'teenbir14':'2014', 'teenbir15':'2015', 
+    'teenbir16':'2016', 'teenbir17':'2017', 'teenbir18':'2018', 
+    'teenbir19':'2019'})
 
-# def line_plot(mdf, title, map, order):
-#     fig = px.line(mdf, title=title, x=mdf['indicator_year'], y = mdf['value'], labels={ 'indicator_year': 'Year', 'value':'Percent'}, 
-#     color = mdf.index, facet_col='trend', category_orders={'CSA2010': [i for i in order.index.unique()], 'trend': ['decrease', 'Little Change', 'Increase']}, 
-#     template='plotly_white') 
+df_prop['indicator_year'] = df_prop['indicator_year'].map(
+    {'prop10':'2010', 'prop11':'2011', 'prop12':'2012', 
+    'prop13':'2013', 'prop14':'2014', 'prop15':'2015', 
+    'prop16':'2016', 'prop17':'2017', 'prop18':'2018', 
+    'prop19':'2019', 'prop20':'2020'})
 
-# print(n_colors(lowcolor='rgb(23, 28, 66)', highcolor='rgb(172, 43, 36)', n_colors=4, colortype="rgb"))
-# for i in colorscale
+df_viol['indicator_year'] = df_viol['indicator_year'].map(
+    {'viol10':'2010', 'viol11':'2011', 'viol12':'2012', 
+    'viol13':'2013', 'viol14':'2014', 'viol15':'2015', 
+    'viol16':'2016', 'viol17':'2017', 'viol18':'2018', 
+    'viol19':'2019', 'viol20':'2020'})
+# df_libcard['indicator_year'] = df_libcard['indicator_year'].map(
+#     {'libcard11':'2011', 'libcard12':'2012', 
+#     'libcard13':'2013', 'libcard14':'2014', 'libcard15':'2015', 
+#     'libcard16':'2016', 'libcard17':'2017', 'libcard18':'2018', 
+#     'libcard19':'2019'})
 
 # Function to create a graph
 # def line_plot(mdf, title, map):
@@ -210,30 +233,18 @@ df_libcard['indicator_year'] = df_libcard['indicator_year'].map(
 def line_plot(mdf, title):
     def map_group(mdf):
         group = mdf.groupby('trend')
-        # print(group.get_group('decrease').sort_values('change', ascending=True),'---------------------------')
         maps = {'Decrease':[i for i in group.get_group('Decrease').index.unique()],
                 'Very Little Change':[i for i in group.get_group('Little Change').index.unique()],
                 'Increase':[i for i in group.get_group('Increase').index.unique()]}
-        # maps = {'Decrease':[i for i in group.get_group('Decrease').sort_values('change', ascending=True, ).index],
-        #     'Very Little Change':[i for i in group.get_group('Little Change').index],
-        #     'Increase':[i for i in group.get_group('Increase').index]}
         return maps
 
     map = map_group(mdf)
 
-    # decrease = [i for i in map["Decrease"]]
-    # stay_same = [i for i in map["Very Little Change"]]
-    # increase = [i for i in map["Increase"]]
-    
-    # group_color = {i: get_colorscale('Blues') for i in map["Decrease"]}
-    # group_color = {i: 'mediumblue' for i in map["Decrease"]}
-    # group_color_yellow= {i: 'dimgrey' for i in map["Very Little Change"]}
-    # group_color_red = {i: 'red' for i in map["Increase"]}
-    # group_color.update(group_color_yellow)
-    # group_color.update(group_color_red)
-
+    # color_ = sample_colorscale(get_colorscale('reds_r'), samplepoints=len(map["Decrease"]), low=0.0, high=.75)
+    # color_medium = sample_colorscale(get_colorscale('greys'), samplepoints=len(map["Very Little Change"]))
+    # color_high = sample_colorscale(get_colorscale('blues'), samplepoints=len(map["Increase"]), low=.5)
     color_ = sample_colorscale(get_colorscale('blues_r'), samplepoints=len(map["Decrease"]), low=0.0, high=.75)
-    color_medium = sample_colorscale(get_colorscale('greys'), samplepoints=len(map["Very Little Change"]), low=.25, high=.85)
+    color_medium = sample_colorscale(get_colorscale('greys'), samplepoints=len(map["Very Little Change"]))
     color_high = sample_colorscale(get_colorscale('reds'), samplepoints=len(map["Increase"]), low=.5)
     count=0
     color_list = {}
@@ -251,24 +262,13 @@ def line_plot(mdf, title):
         d_color =  {j : color_high[count]}
         color_list.update(d_color)
         count+=1
-    print(color_list)
-    
-    # print(group_color)
-    print(sample_colorscale(get_colorscale('Blues'), samplepoints=len(map["Decrease"])))
-    # for i in decrease:
-        # colors_= n_colors(lowcolor='rgb(23, 28, 66)', highcolor='rgb(172, 43, 36)', n_colors=, colortype="rgb")
-        # colors_ = get_colorscale('Blues')
-        # print(colors_)
-        # group_color = {i: color}
-
-
-    # colors_= n_colors(lowcolor='rgb(23, 28, 66)', highcolor='rgb(172, 43, 36)', n_colors=group_color, colortype="rgb")
+        
     # Setting up the graph
     # fig = px.line(mdf, title=title, x=mdf['indicator_year'], y = mdf['value'], labels={ 'indicator_year': 'Year', 'value':'Total per Year'}, 
     #     color = mdf.index, color_discrete_sequence=px.colors.sequential.Plotly3, facet_col='trend', category_orders={'trend': ['Decrease', 'Little Change', 'Increase']}, height=600, width=1250, 
     #     template='plotly_white') 
-    fig = px.line(mdf, title=title, x=mdf['indicator_year'], y = mdf['value'], labels={ 'indicator_year': 'Year', 'value':'Percent'}, 
-        color = mdf.index, color_discrete_map=color_list, facet_col='trend', category_orders={'trend': ['Decrease', 'Little Change', 'Increase']}, height=600, width=1250, 
+    fig = px.line(mdf, title=title, x=mdf['indicator_year'], y = mdf['value'], labels={ 'indicator_year': 'Year', 'value':'Value'}, 
+        color = mdf.index, color_discrete_map=color_list, facet_col='trend', category_orders={'trend': ['Decrease', 'Little Change', 'Increase']}, height=600, width=1250, hover_data=['change'], 
         template='plotly_white') 
     group = []
     vis = []
@@ -325,20 +325,26 @@ def line_plot(mdf, title):
     fig.update_traces(fill='none')
     fig.update_xaxes(type='linear')
 
-    # fig.show()
+    fig.show()
     return fig
-# line_plot(my_df, "Percent of Residential Properties that are Vacant and Abandoned, by CSA")
-# line_plot(my_df, "Percent of Residential Properties that are Vacant and Abandoned, by CSA", vacant_map)
-# line_plot(my_df, "Percent of Residential Properties that are Vacant and Abandoned, by CSA", vacant_map, vacant_sorted_column)
 
-# line_plot(df_nomail, "Percent of Residential Properties that Do Not Receive Mail, by CSA")
+# fig6 = line_plot(df_nomail, "Percent of Residential Properties that Do Not Receive Mail, by CSA")
+# py.plot(fig6, filename ='Do Not Receive Mail', auto_open=True)
 # line_plot(df_demo, "Percent of Residential Properties that Do Not Receive Mail, by CSA")
-# line_plot(df_salepri, "sale price")
+# fig5 = line_plot(df_salepri, "sale price")
+# py.plot(fig5, filename ='Home Sale Price', auto_open=True)
 # line_plot(df_const, "construction")
 # line_plot(df_resrehab, "residential rehab")
 # line_plot(df_libcard, "libcard")
-line_plot(my_df, "Vacant, by CSA")
+# line_plot(my_df, "Percent of Residential Properties that are Vacant and Abandoned, by CSA")
+# fig2 = line_plot(df_viol, "Violent Crime Rate per 1,000 Residents, by CSA")
+# py.plot(fig2, filename ='Violent_Crime', auto_open=True)
+# fig3 = line_plot(df_prop, "Property Crime Rate per 1,000 Residents, by CSA")
+# py.plot(fig3, filename ='Property Crime', auto_open=True)
+# fig4 = line_plot(df_teenbir, "Teen Birth Rate per 1,000 Females (aged 15-19), by CSA")
+# py.plot(fig4, filename ='Teen Birth Rate', auto_open=True)
+
 # line_plot(df_lifexp, "Life expectancy", lifexp_map, lifexp_sorted_column)
 
-# fig = line_plot(my_df, "Percent of Residential Properties that are Vacant and Abandoned, by CSA", vacant_map)
-# py.plot(fig, filename ='beep', auto_open=True)
+fig = line_plot(my_df, "Percent of Residential Properties that are Vacant and Abandoned, by CSA")
+py.plot(fig, filename ='Vacant_and_Abandoned')
